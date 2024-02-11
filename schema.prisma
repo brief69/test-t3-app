@@ -1,0 +1,32 @@
+model Project {
+  id        Int      @id @default(autoincrement())
+  name      String
+  documents Document[]
+  // その他のフィールド
+}
+
+model Document {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String
+  projectId Int
+  project   Project  @relation(fields: [projectId], references: [id])
+  // その他のフィールド
+}
+
+model Order {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  items      Json
+  createdAt  DateTime @default(now())
+  // その他のフィールド
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}

@@ -1,0 +1,83 @@
+// これはあなたのPrismaスキーマファイルです。
+// This is your Prisma schema file,
+// ドキュメントでさらに学ぶことができます: https://pris.ly/d/prisma-schema
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Prismaクライアントの設定
+generator client {
+    provider = "prisma-client-js" // 使用するPrismaクライアントの指定
+}
+
+// データベースの設定
+datasource db {
+    provider = "mysql" // 使用するデータベースの種類を指定
+    // mysqlまたはsqlserverを使用する場合、model Accountの下にある@db.Textアノテーションのコメントを外してください
+    // NOTE: When using mysql or sqlserver, uncomment the @db.Text annotations in model Account below
+    // 詳細は以下を参照してください:
+    // Further reading:
+    // https://next-auth.js.org/adapters/prisma#create-the-prisma-schema
+    // https://www.prisma.io/docs/reference/api-reference/prisma-schema-reference#string
+    url      = env("DATABASE_URL") // データベースへの接続URL
+}
+
+// 投稿(Post)モデルの定義
+model Post {
+    id        Int      @id @default(autoincrement()) // 自動インクリメントされるID
+    name      String // 投稿の名前
+    createdAt DateTime @default(now()) // 作成日時（デフォルトは現在時刻）
+    updatedAt DateTime @updatedAt // 更新日時
+
+    createdBy   User   @relation(fields: [createdById], references: [id]) // 投稿を作成したユーザー
+    createdById String // ユーザーID
+
+    @@index([name]) // 名前に基づくインデックス
+}
+
+// Next authに必要なアカウント(Account)モデルの定義
+model Account {
+    id                String  @id @default(cuid()) // CUIDによる一意のID
+    userId            String // ユーザーID
+    type              String // アカウントの種類
+    provider          String // プロバイダー
+    providerAccountId String // プロバイダーアカウントID
+    refresh_token     String? @db.Text // リフレッシュトークン（オプショナル）
+    access_token      String? // アクセストークン（オプショナル）
+    expires_at        Int? // 有効期限（オプショナル）
+    token_type        String? // トークンの種類（オプショナル）
+    scope             String? // スコープ（オプショナル）
+    id_token          String? // IDトークン（オプショナル）
+    session_state     String? // セッション状態（オプショナル）
+    user              User    @relation(fields: [userId], references: [id], onDelete: Cascade) // ユーザー
+
+    @@unique([provider, providerAccountId]) // プロバイダーとプロバイダーアカウントIDの組み合わせは一意
+}
+
+// セッション(Session)モデルの定義
+model Session {
+    id           String   @id @default(cuid()) // CUIDによる一意のID
+    sessionToken String   @unique // セッショントークン
+    userId       String // ユーザーID
+    expires      DateTime // 有効期限
+    user         User     @relation(fields: [userId], references: [id], onDelete: Cascade) // ユーザー
+}
+
+// ユーザー(User)モデルの定義
+model User {
+    id            String    @id @default(cuid()) // CUIDによる一意のID
+    name          String? // 名前（オプショナル）
+    email         String?   @unique // メールアドレス（オプショナル、一意）
+    emailVerified DateTime? // メール確認日時（オプショナル）
+    image         String? // 画像URL（オプショナル）
+    accounts      Account[] // アカウント
+    sessions      Session[] // セッション
+    posts         Post[] // 投稿
+}
+
+// 認証トークン(VerificationToken)モデルの定義
+model VerificationToken {
+    identifier String // 識別子
+    token      String   @unique // トークン
+    expires    DateTime // 有効期限
+
+    @@unique([identifier, token]) // 識別子とトークンの組み合わせは一意
+}
